@@ -19,12 +19,15 @@ let input_file =
 type kind = Signature | Structure
 
 let kind =
-  if Filename.check_suffix input_file ".mli" then Signature else
-  if Filename.check_suffix input_file ".ml"  then Structure else begin
-    Printf.eprintf "%s: unknown suffix in filename: %s\n"
-      program_name input_file;
-    exit 2
-  end
+  if Filename.check_suffix input_file ".mli"    then Signature else
+  if Filename.check_suffix input_file ".ml"     then Structure else
+  if Filename.check_suffix input_file ".eliomi" then Signature else
+  if Filename.check_suffix input_file ".eliom"  then Structure else
+    begin
+      Printf.eprintf "%s: unknown suffix in filename: %s\n"
+        program_name input_file;
+      exit 2
+    end
 
 let file_contents =
   let ic = open_in input_file in
