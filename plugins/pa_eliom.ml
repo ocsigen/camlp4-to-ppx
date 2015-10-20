@@ -8,6 +8,10 @@ let linkme = () ;;
 
 let merge_locs l ls = List.fold_left Token.Loc.merge ls l ;;
 
+let string_of_loc loc =
+  let start = Loc.start_off loc and stop = Loc.stop_off loc in
+  String.sub Camlp4_to_ppx.file_contents start (stop - start)
+
 let rec filter =
   (* parser keyword in next line for less horrendous auto-indent *)
   parser
@@ -101,20 +105,17 @@ set_section_shared:
 set_section_client:
   [[ -> set_section S_Client ]];
 
+located_begin_bracket: [[ KEYWORD "{" -> _loc ]];
+
 located_begin_brackets: [[ KEYWORD "{{" -> _loc ]];
 
 located_end_brackets: [[ KEYWORD "}}" -> _loc ]];
 
-located_shared_y: [[
-    KEYWORD "{shared#";
-    y = OPT ctyp;
-    KEYWORD "{" -> y, _loc
-  ]];
+located_opt_ctyp: [[y = OPT ctyp -> y, _loc]];
 
-located_client_y: [[
-    KEYWORD "{";
-    y = OPT ctyp;
-    KEYWORD "{" -> y, _loc
+located_shared_brackets: [[
+    KEYWORD "{shared#"; (y, loc_y) = located_opt_ctyp; KEYWORD "{" ->
+    y, loc_y, _loc
   ]];
 
 str_item:
@@ -143,24 +144,41 @@ str_item:
 
 expr:
   LEVEL "simple" [
-    [ KEYWORD "{"; _ = TRY [_ = label_expr_list; "}"] ->
+    [ located_begin_bracket;
+      _ = TRY [_ = label_expr_list; "}"] ->
       <:expr<>>
-    | (y, loc) = located_shared_y; expr;
-      loc' = located_end_brackets ->
-      replace loc "[%se ";
-      replace loc' "]";
-      <:expr<>>
-    | KEYWORD "{"; loc = TRY [OPT ctyp; KEYWORD "{"];
-      e = expr;
-      loc' = located_end_brackets ->
-      <:expr<>>
-    | KEYWORD "{"; expr LEVEL "."; "with"; label_expr_list; "}" ->
+    | loc = located_begin_bracket;
+      (y, loc_, loc_y) = TRY
+        [(y, loc_y) = [y = OPT ctyp -> y, _loc];
+         KEYWORD "{" -> y, _loc, loc_y];
+      expr; loc' = located_end_brackets ->
+      let loc = merge_locs [loc_] loc in
+      (match y with
+       | Some y ->
+         replace loc "[%client (";
+         string_of_loc loc_y |> Printf.sprintf ": %s)]" |> replace loc'
+       | None ->
+         replace loc "[%client ";
+         replace loc' "]");
       <:expr<>>
     | loc = located_begin_brackets;
       e = expr;
       loc' = located_end_brackets ->
-      replace loc " [%ce ";
+      replace loc " [%client ";
       replace loc' "]";
+      <:expr<>>
+    | (y, loc_y, loc) = located_shared_brackets; expr;
+      loc' = located_end_brackets ->
+      (match y with
+       | Some y ->
+         replace loc "[%shared (";
+         string_of_loc loc_y |> Printf.sprintf ": %s)]" |> replace loc'
+       | None ->
+         replace loc "[%shared ";
+         replace loc' "]");
+      <:expr<>>
+    | loc = located_begin_bracket;
+      expr LEVEL "."; "with"; label_expr_list; "}" ->
       <:expr<>>
     ]
   ];
