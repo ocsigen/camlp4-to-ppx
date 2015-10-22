@@ -53,6 +53,10 @@ let name_conv_longid uid lid =
   match uid, lid with
   | "Json", "t" ->
     Some "json"
+  | "Json", "to_string" ->
+    Some "to_json"
+  | "Json", "from_string" ->
+    Some "of_json"
   | _, _ ->
     None
 
