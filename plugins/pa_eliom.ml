@@ -96,13 +96,13 @@ DELETE_RULE Gram expr:
 
 EXTEND Gram GLOBAL: str_item expr;
 
-set_section_server:
+dummy_set_section_server:
   [[ -> set_section S_Server ]];
 
-set_section_shared:
+dummy_set_section_shared:
   [[ -> set_section S_Shared ]];
 
-set_section_client:
+dummy_set_section_client:
   [[ -> set_section S_Client ]];
 
 located_begin_bracket: [[ KEYWORD "{" -> _loc ]];
@@ -122,19 +122,19 @@ str_item:
   BEFORE "top" [
     "eliom"
       [ loc = [ KEYWORD "{server{" -> _loc ];
-        _ = set_section_server; _ = LIST0 str_item ;
+        _ = dummy_set_section_server; _ = LIST0 str_item;
         loc' = located_end_brackets ->
         replace loc "[%%server ]";
         replace loc' "";
         <:str_item<>>
       | loc = [ KEYWORD "{shared{" -> _loc ];
-        _ = set_section_server; _ = LIST0 str_item ;
+        _ = dummy_set_section_shared; _ = LIST0 str_item;
         loc' = located_end_brackets ->
         replace loc "[%%shared ]";
         replace loc' "[%%server ]";
         <:str_item<>>
       | loc = [ KEYWORD "{client{" -> _loc ];
-        _ = set_section_server; _ = LIST0 str_item ;
+        _ = dummy_set_section_client; _ = LIST0 str_item;
         loc' = located_end_brackets ->
         replace loc "[%%client ]";
         replace loc' "[%%server ]";
