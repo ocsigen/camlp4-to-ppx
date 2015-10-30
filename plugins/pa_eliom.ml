@@ -13,7 +13,6 @@ let string_of_loc loc =
   String.sub Camlp4_to_ppx.file_contents start (stop - start)
 
 let rec filter =
-  (* parser keyword in next line for less horrendous auto-indent *)
   parser
 
 | [< '(KEYWORD "{", loc0); next >] ->
@@ -62,7 +61,7 @@ let rec filter =
   let is_left_delimitor str = List.mem str.[0] ['('; '['; '{'] in
   let ends_with_percent_sign str = str.[String.length str-1] = '%' in
   match other with
-  | (* Allow %-sign to for injection directly after left delimitors *)
+  | (* Allow %-sign for injection directly after left delimitors *)
     SYMBOL str, loc0 when String.length str > 0 &&
                           is_left_delimitor str &&
                           ends_with_percent_sign str ->
@@ -124,20 +123,20 @@ str_item:
       [ loc = [ KEYWORD "{server{" -> _loc ];
         _ = dummy_set_section_server; _ = LIST0 str_item;
         loc' = located_end_brackets ->
-        replace loc "[%%server ]";
-        replace loc' "";
+        replace loc "[%%server";
+        replace loc' "]";
         <:str_item<>>
       | loc = [ KEYWORD "{shared{" -> _loc ];
         _ = dummy_set_section_shared; _ = LIST0 str_item;
         loc' = located_end_brackets ->
-        replace loc "[%%shared ]";
-        replace loc' "[%%server ]";
+        replace loc "[%%shared";
+        replace loc' "]";
         <:str_item<>>
       | loc = [ KEYWORD "{client{" -> _loc ];
         _ = dummy_set_section_client; _ = LIST0 str_item;
         loc' = located_end_brackets ->
-        replace loc "[%%client ]";
-        replace loc' "[%%server ]";
+        replace loc "[%%client";
+        replace loc' "]";
         <:str_item<>>
       ]
   ];
