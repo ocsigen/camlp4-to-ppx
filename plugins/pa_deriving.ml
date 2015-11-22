@@ -60,10 +60,26 @@ let name_conv_longid uid lid =
   | _, _ ->
     None
 
+let replace_deriving l loc =
+  let s =
+    let f uid =
+      match name_conv_uid uid with
+      | Some plugin ->
+        plugin
+      | None ->
+        failwith
+          (uid ^ ": don't know of an equivalent ppx_deriving plug-in")
+    in
+    List.map f l |> String.concat ", "
+  in
+  replace loc ("[@@deriving " ^ s ^ "]")
+
 DELETE_RULE Gram str_item: "type"; type_declaration END ;;
 
+DELETE_RULE Gram sig_item: "type"; type_declaration END ;;
+
 EXTEND Gram
-  GLOBAL: str_item expr module_expr;
+  GLOBAL: str_item sig_item expr module_expr;
 
 str_item: [
   [ "type"; type_declaration ->
@@ -71,24 +87,27 @@ str_item: [
   | "type"; type_declaration;
     (loc, l) = [
       "deriving";
-      "("; l = LIST0 [x = UIDENT -> x] SEP ",";
-      ")" ->
+      "("; l = LIST0 [x = UIDENT -> x] SEP ","; ")" ->
       _loc, l
     ]
     ->
-    let s =
-      let f uid =
-        match name_conv_uid uid with
-        | Some plugin ->
-          plugin
-        | None ->
-          failwith
-            (uid ^ ": don't know of an equivalent ppx_deriving plug-in")
-      in
-      List.map f l |> String.concat ", "
-    in
-    replace loc ("[@@deriving " ^ s ^ "]");
+    replace_deriving l loc;
     <:str_item<>>
+  ]
+];
+
+sig_item: [
+  [ "type"; type_declaration ->
+    <:sig_item<>>
+  | "type"; types = type_declaration;
+    (loc, l) = [
+      "deriving";
+      "("; l = LIST0 [x = UIDENT -> x] SEP ","; ")" ->
+      _loc, l
+    ]
+    ->
+    replace_deriving l loc;
+    <:sig_item<>>
   ]
 ];
 
