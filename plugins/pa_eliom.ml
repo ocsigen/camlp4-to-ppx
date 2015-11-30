@@ -93,7 +93,7 @@ DELETE_RULE Gram expr: "{"; TRY [label_expr_list; "}"] END ;;
 DELETE_RULE Gram expr:
   "{"; TRY [expr LEVEL "."; "with"]; label_expr_list; "}" END ;;
 
-EXTEND Gram GLOBAL: str_item expr;
+EXTEND Gram GLOBAL: str_item sig_item expr;
 
 dummy_set_section_server:
   [[ -> set_section S_Server ]];
@@ -138,6 +138,30 @@ str_item:
         replace loc "[%%client";
         replace loc' "]";
         <:str_item<>>
+      ]
+  ];
+
+sig_item:
+  BEFORE "top" [
+    "eliom"
+      [ loc = [ KEYWORD "{server{" -> _loc ];
+        _ = dummy_set_section_server; _ = LIST0 sig_item;
+        loc' = located_end_brackets ->
+        replace loc "[%%server.start]";
+        replace loc' "";
+        <:sig_item<>>
+      | loc = [ KEYWORD "{shared{" -> _loc ];
+        _ = dummy_set_section_shared; _ = LIST0 sig_item;
+        loc' = located_end_brackets ->
+        replace loc "[%%shared.start]";
+        replace loc' "";
+        <:sig_item<>>
+      | loc = [ KEYWORD "{client{" -> _loc ];
+        _ = dummy_set_section_client; _ = LIST0 sig_item;
+        loc' = located_end_brackets ->
+        replace loc "[%%client.start]";
+        replace loc' "";
+        <:sig_item<>>
       ]
   ];
 
