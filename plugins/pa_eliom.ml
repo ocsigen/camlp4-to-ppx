@@ -154,13 +154,13 @@ sig_item:
         _ = dummy_set_section_shared; _ = LIST0 sig_item;
         loc' = located_end_brackets ->
         replace loc "[%%shared.start]";
-        replace loc' "";
+        replace loc' "[%%server.start]";
         <:sig_item<>>
       | loc = [ KEYWORD "{client{" -> _loc ];
         _ = dummy_set_section_client; _ = LIST0 sig_item;
         loc' = located_end_brackets ->
         replace loc "[%%client.start]";
-        replace loc' "";
+        replace loc' "[%%server.start]";
         <:sig_item<>>
       ]
   ];
